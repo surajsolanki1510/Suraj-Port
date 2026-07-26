@@ -14,13 +14,16 @@ gsap.registerPlugin(ScrollTrigger)
 
 const INTRO_AUDIO_KEY = 'suraj-port-intro-audio'
 
-function prefersQuiet() {
-  return (
-    typeof window !== 'undefined' &&
-    (window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
-      window.matchMedia('(prefers-reduced-data: reduce)').matches)
-  )
-}
+/** Events that count as the interaction browsers require before audible playback. */
+const UNLOCK_EVENTS = [
+  'pointerdown',
+  'mousedown',
+  'touchstart',
+  'keydown',
+  'wheel',
+  'scroll',
+  'mousemove',
+] as const
 
 export default function App() {
   const { flight, merge, launch, onArrived } = useRocketAscend()
@@ -50,9 +53,8 @@ export default function App() {
     return () => ctx.revert()
   }, [])
 
-  // Intro sting: once per browser tab session
+  // Intro sting: plays by default, once per browser tab session
   useEffect(() => {
-    if (prefersQuiet()) return
     try {
       if (sessionStorage.getItem(INTRO_AUDIO_KEY)) return
     } catch {
@@ -61,7 +63,8 @@ export default function App() {
 
     const audio = new Audio('/port-audio.mp3')
     audio.preload = 'auto'
-    audio.volume = 0.55
+    audio.muted = false
+    audio.volume = 0.6
 
     let started = false
     let cleaned = false
@@ -74,50 +77,44 @@ export default function App() {
       }
     }
 
-    const cleanupUnlock = () => {
+    const cleanup = () => {
       if (cleaned) return
       cleaned = true
-      window.removeEventListener('pointerdown', unlock, true)
-      window.removeEventListener('keydown', unlock, true)
+      UNLOCK_EVENTS.forEach((evt) => window.removeEventListener(evt, unlock, true))
+      document.removeEventListener('visibilitychange', onVisible)
     }
 
-    const start = () => {
+    const attempt = () => {
       if (started) return
-      started = true
       void audio.play().then(
         () => {
+          started = true
           markPlayed()
+          cleanup()
         },
         () => {
-          started = false
+          /* still blocked — listeners stay armed */
         },
       )
     }
 
-    const unlock = () => {
-      if (started) {
-        cleanupUnlock()
-        return
-      }
-      start()
-      cleanupUnlock()
+    const unlock = () => attempt()
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') attempt()
     }
 
-    void audio.play().then(
-      () => {
-        started = true
-        markPlayed()
-        cleanupUnlock()
-      },
-      () => {
-        // Autoplay blocked — wait for first user gesture in this tab
-        window.addEventListener('pointerdown', unlock, true)
-        window.addEventListener('keydown', unlock, true)
-      },
+    // Try immediately; browsers allow this when the visitor has prior engagement
+    attempt()
+
+    // Otherwise fire on the earliest signal of interaction
+    UNLOCK_EVENTS.forEach((evt) =>
+      window.addEventListener(evt, unlock, { capture: true, passive: true }),
     )
+    document.addEventListener('visibilitychange', onVisible)
 
     return () => {
-      cleanupUnlock()
+      cleanup()
       audio.pause()
       audio.src = ''
     }
