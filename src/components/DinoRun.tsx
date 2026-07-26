@@ -46,6 +46,8 @@ type Hud = {
   started: boolean
   night: boolean
   beatRecord: boolean
+  tier: string
+  speedLabel: string
 }
 
 type Actions = {
@@ -119,7 +121,16 @@ const emptyHud = (): Hud => ({
   started: false,
   night: false,
   beatRecord: false,
+  tier: 'WARMUP',
+  speedLabel: 'x1.0',
 })
+
+function runTier(score: number) {
+  if (score < 200) return 'WARMUP'
+  if (score < 500) return 'CRUISE'
+  if (score < 900) return 'PRESSURE'
+  return 'CHAOS'
+}
 
 function px(
   ctx: CanvasRenderingContext2D,
@@ -215,9 +226,10 @@ export function DinoRun() {
     let running = false
     let over = false
     let score = 0
-    let speed = 5.0
-    const baseSpeed = 5.0
-    let spawnTimer = 95
+    let speed = 4.4
+    const baseSpeed = 4.4
+    const maxBoost = 5.1
+    let spawnTimer = 110
     let groundOff = 0
     let hudTick = 0
     let lastHudScore = -1
@@ -237,8 +249,8 @@ export function DinoRun() {
       legPhase: 0,
       blink: 0,
     }
-    const GRAVITY = 0.88
-    const JUMP_V = 14.8
+    const GRAVITY = 0.9
+    const JUMP_V = 15.1
     const SCALE = 2
 
     const obstacles: Obstacle[] = []
@@ -274,7 +286,7 @@ export function DinoRun() {
       obstacles.length = 0
       score = 0
       speed = baseSpeed
-      spawnTimer = 95
+      spawnTimer = 110
       lastHudScore = -1
       lastTs = 0
       cachedBest = loadBest()
@@ -299,6 +311,8 @@ export function DinoRun() {
         started: true,
         night: false,
         beatRecord: false,
+        tier: 'WARMUP',
+        speedLabel: 'x1.0',
       })
     }
 
@@ -376,25 +390,36 @@ export function DinoRun() {
     canvas.addEventListener('pointerdown', onPointerDown)
 
     const spawn = () => {
-      // Birds unlock late, then show up more often as the run goes on
+      // Soft start → birds creep in → late chaos
       const birdChance =
-        score < 450 ? 0 : score < 700 ? 0.12 : score < 1100 ? 0.22 : 0.32
+        score < 180 ? 0 : score < 380 ? 0.06 : score < 650 ? 0.14 : score < 1000 ? 0.24 : 0.38
       const isBird = Math.random() < birdChance
 
       if (isBird) {
         const tier = Math.random()
-        const y = tier > 0.66 ? 62 : tier > 0.33 ? 36 : 14
+        // More low birds late (forces duck timing)
+        const y =
+          score > 900
+            ? tier > 0.55
+              ? 14
+              : tier > 0.25
+                ? 36
+                : 62
+            : tier > 0.66
+              ? 62
+              : tier > 0.33
+                ? 36
+                : 14
         obstacles.push({ x: W + 24, w: 46, h: 32, kind: 'bird', y, flap: 0, cluster: 1 })
       } else {
-        // Mostly single cacti early → doubles mid → rare triples late
         let cluster = 1
-        if (score > 280 && Math.random() < Math.min(0.35, 0.08 + score * 0.00025)) cluster = 2
-        if (score > 850 && Math.random() < Math.min(0.22, 0.04 + score * 0.00012)) cluster = 3
+        if (score > 340 && Math.random() < Math.min(0.42, 0.05 + score * 0.0003)) cluster = 2
+        if (score > 980 && Math.random() < Math.min(0.3, 0.03 + score * 0.00016)) cluster = 3
         const unit = 18
         obstacles.push({
           x: W + 24,
           w: unit * cluster + (cluster - 1) * 4,
-          h: 28 + Math.random() * (score > 400 ? 16 : 10),
+          h: 28 + Math.random() * (score > 500 ? 18 : score > 250 ? 14 : 9),
           kind: 'cactus',
           y: 0,
           flap: 0,
@@ -424,11 +449,15 @@ export function DinoRun() {
         started: true,
         night: nightMix > 0.5,
         beatRecord,
+        tier: runTier(finalScore),
+        speedLabel: `x${(speed / baseSpeed).toFixed(1)}`,
       })
     }
 
     const syncHud = (force = false) => {
       const floored = Math.floor(score)
+      const tier = runTier(floored)
+      const speedLabel = `x${(speed / baseSpeed).toFixed(1)}`
       hudTick++
       // Only push React state when the visible score changes — avoids lag at high speed
       if (!force && floored === lastHudScore && hudTick % 12 !== 0) return
@@ -439,7 +468,9 @@ export function DinoRun() {
           h.score === floored &&
           h.running === running &&
           h.over === over &&
-          h.night === nightMix > 0.5
+          h.night === nightMix > 0.5 &&
+          h.tier === tier &&
+          h.speedLabel === speedLabel
         ) {
           return h
         }
@@ -450,6 +481,8 @@ export function DinoRun() {
           running,
           over,
           night: nightMix > 0.5,
+          tier,
+          speedLabel,
         }
       })
     }
@@ -648,9 +681,12 @@ export function DinoRun() {
 
       if (running && !over) {
         score += speed * 0.016 * dt
-        // Snappy start, gentle climb, hard cap so late game doesn't melt the frame
-        const t = Math.min(1, score / 1200)
-        speed = baseSpeed + Math.min(3.4, 3.4 * (0.55 * t + 0.45 * t * t))
+        // Easy open → slow burn → late chaos (eased curve, high cap)
+        const t = Math.min(1, score / 2200)
+        const eased = t * t * (1.15 - 0.15 * t)
+        speed = baseSpeed + maxBoost * eased
+        // Tiny late gravity bump so airtime shrinks under pressure
+        const g = GRAVITY + Math.min(0.18, score * 0.00008)
         groundOff += speed * dt
         dino.legPhase += speed * 0.055 * dt
 
@@ -658,7 +694,7 @@ export function DinoRun() {
         nightMix = cyclePos < 0.55 ? 0 : Math.min(1, (cyclePos - 0.55) * 3.5)
         if (cyclePos > 0.92) nightMix = Math.max(0, (1 - cyclePos) * 12)
 
-        dino.vy += GRAVITY * dt
+        dino.vy += g * dt
         dino.y -= dino.vy * dt
         if (dino.y <= 0) {
           dino.y = 0
@@ -679,12 +715,13 @@ export function DinoRun() {
         }
 
         spawnTimer -= dt
-        if (spawnTimer <= 0 && obstacles.length < 6) {
+        const maxObs = score > 1100 ? 8 : score > 700 ? 7 : 5
+        if (spawnTimer <= 0 && obstacles.length < maxObs) {
           spawn()
-          // Still gets denser, but never so packed that the canvas chokes
+          // Wide gaps early, tight late — density mostly from score, not raw speed
           const gap =
-            Math.max(70, 155 - score * 0.055 - speed * 3.2) +
-            Math.random() * Math.max(30, 55 - score * 0.025)
+            Math.max(52, 190 - score * 0.05 - speed * 1.8) +
+            Math.random() * Math.max(22, 72 - score * 0.03)
           spawnTimer = gap
         }
 
@@ -740,18 +777,37 @@ export function DinoRun() {
   }, [])
 
   return (
-    <div className={`dino${hud.running && !hud.over ? ' is-playing' : ''}`}>
+    <div
+      className={`dino${hud.running && !hud.over ? ' is-playing' : ''}${hud.over ? ' is-over' : ''}`}
+      data-tier={hud.tier}
+    >
+      <div className="dino-bezel" aria-hidden>
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+
       <div className="dino-head">
         <div>
-          <strong>DINO RUN</strong>
-          <span className="dino-sub">The classic. Jump, duck, beat the record.</span>
+          <div className="dino-title-row">
+            <strong>DINO RUN</strong>
+            {hud.running && !hud.over && <em className="dino-live">LIVE</em>}
+          </div>
+          <span className="dino-sub">Warmup → cruise → pressure → chaos. Survive the ramp.</span>
         </div>
         <div className="dino-stats">
+          <span className="dino-stat-tier">
+            ZONE <b>{hud.tier}</b>
+          </span>
+          <span>
+            SPD <b>{hud.speedLabel}</b>
+          </span>
           <span>
             SCORE <b>{hud.score}m</b>
           </span>
           <span>
-            YOUR BEST <b>{hud.best}m</b>
+            BEST <b>{hud.best}m</b>
           </span>
         </div>
       </div>
@@ -770,6 +826,7 @@ export function DinoRun() {
       </div>
 
       <div className="dino-stage" ref={wrapRef}>
+        <div className="dino-stage-frame" aria-hidden />
         <canvas ref={canvasRef} aria-label="Dinosaur runner game" />
 
         {hud.over && (
@@ -813,7 +870,7 @@ export function DinoRun() {
               </>
             ) : (
               <>
-                <p>{nameSaved ? 'CROWN CLAIMED' : 'GAME OVER'}</p>
+                <p>{nameSaved ? 'CROWN CLAIMED' : 'SYSTEM CRASH'}</p>
                 <div className="dino-over-score">{hud.score}m</div>
                 <p className="dino-over-copy">
                   {nameSaved
@@ -837,7 +894,7 @@ export function DinoRun() {
       </div>
 
       <p className="dino-keys">
-        <b>↑</b> / Space jump · <b>↓</b> duck
+        <b>↑</b> / Space jump · <b>↓</b> duck · zone ramps with distance
       </p>
 
       {hud.started && !hud.over && (
@@ -869,10 +926,10 @@ export function DinoRun() {
       )}
 
       <p className="dino-foot dino-foot-desktop">
-        Laptop: <b>↑</b> jump · <b>↓</b> duck · Beat the record holder, claim your name.
+        Laptop: <b>↑</b> jump · <b>↓</b> duck · Survive WARMUP → CHAOS and steal the crown.
       </p>
       <p className="dino-foot dino-foot-mobile">
-        Phone: tap <b>Jump</b> / hold <b>Duck</b> · Beat the record, claim your name.
+        Phone: tap <b>Jump</b> / hold <b>Duck</b> · Beat the ramp, claim your name.
       </p>
     </div>
   )

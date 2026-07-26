@@ -4827,17 +4827,102 @@ img {
   }
 }
 
-/* ---------- OFFLINE DINO RUNNER — contact game ---------- */
+/* ---------- OFFLINE DINO RUNNER — arcade contact game ---------- */
 .dino {
+  --dino-neon: #ff7a18;
+  --dino-hot: #ff2a1f;
+  --dino-glow: #ffb347;
+  position: relative;
   max-width: min(1100px, 100%);
   margin: 1.6rem auto 0;
-  border: 1px solid rgba(255, 140, 60, 0.32);
+  border: 1px solid rgba(255, 140, 60, 0.45);
   background:
-    radial-gradient(ellipse at 80% 0%, rgba(255, 90, 40, 0.1), transparent 45%),
-    linear-gradient(165deg, #0a0b10, #05060a);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.5);
+    radial-gradient(ellipse at 12% 0%, rgba(255, 60, 20, 0.18), transparent 42%),
+    radial-gradient(ellipse at 90% 10%, rgba(255, 170, 40, 0.12), transparent 40%),
+    linear-gradient(165deg, #0c0a12 0%, #07060c 48%, #040308 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 120, 40, 0.12) inset,
+    0 0 40px rgba(255, 80, 20, 0.12),
+    0 28px 80px rgba(0, 0, 0, 0.55);
   overflow: hidden;
   text-align: left;
+}
+
+.dino-bezel {
+  pointer-events: none;
+  position: absolute;
+  inset: 0.45rem;
+  z-index: 6;
+}
+
+.dino-bezel span {
+  position: absolute;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid rgba(255, 179, 71, 0.7);
+  box-shadow: 0 0 12px rgba(255, 122, 24, 0.35);
+}
+
+.dino-bezel span:nth-child(1) {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.dino-bezel span:nth-child(2) {
+  top: 0;
+  right: 0;
+  border-left: 0;
+  border-bottom: 0;
+}
+
+.dino-bezel span:nth-child(3) {
+  bottom: 0;
+  left: 0;
+  border-right: 0;
+  border-top: 0;
+}
+
+.dino-bezel span:nth-child(4) {
+  bottom: 0;
+  right: 0;
+  border-left: 0;
+  border-top: 0;
+}
+
+.dino.is-playing {
+  border-color: rgba(255, 140, 60, 0.75);
+  box-shadow:
+    0 0 0 1px rgba(255, 140, 40, 0.2) inset,
+    0 0 48px rgba(255, 90, 20, 0.22),
+    0 28px 80px rgba(0, 0, 0, 0.55);
+  animation: dino-cabinet-pulse 1.8s ease-in-out infinite;
+}
+
+.dino[data-tier='PRESSURE'] {
+  --dino-neon: #ff5a18;
+}
+
+.dino[data-tier='CHAOS'] {
+  --dino-neon: #ff2a1f;
+  border-color: rgba(255, 60, 40, 0.7);
+}
+
+@keyframes dino-cabinet-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 140, 40, 0.16) inset,
+      0 0 36px rgba(255, 90, 20, 0.16),
+      0 28px 80px rgba(0, 0, 0, 0.55);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 170, 60, 0.28) inset,
+      0 0 58px rgba(255, 90, 20, 0.3),
+      0 28px 80px rgba(0, 0, 0, 0.55);
+  }
 }
 
 .dino-head {
@@ -4846,40 +4931,95 @@ img {
   justify-content: space-between;
   align-items: flex-end;
   gap: 0.75rem;
-  padding: 0.9rem 1.1rem;
-  border-bottom: 1px solid rgba(255, 140, 60, 0.16);
-  background: rgba(0, 0, 0, 0.35);
+  padding: 0.95rem 1.15rem 0.85rem;
+  border-bottom: 1px solid rgba(255, 140, 60, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 90, 30, 0.12), transparent 70%),
+    rgba(0, 0, 0, 0.45);
+}
+
+.dino-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .dino-head strong {
   display: block;
   font-family: var(--font-display);
-  font-size: 0.95rem;
-  letter-spacing: 0.14em;
+  font-size: 1.05rem;
+  letter-spacing: 0.16em;
   color: #ffb347;
+  text-shadow: 0 0 18px rgba(255, 140, 40, 0.55);
+}
+
+.dino-live {
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  padding: 0.22rem 0.45rem;
+  color: #120806;
+  background: linear-gradient(90deg, #ff7a18, #ff2a1f);
+  box-shadow: 0 0 16px rgba(255, 80, 20, 0.55);
+  animation: dino-live-blink 1s steps(2) infinite;
+}
+
+@keyframes dino-live-blink {
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .dino-sub {
   display: block;
-  margin-top: 0.2rem;
+  margin-top: 0.28rem;
   font-family: var(--font-mono);
   font-size: 0.52rem;
-  letter-spacing: 0.12em;
-  color: #8a7d70;
+  letter-spacing: 0.1em;
+  color: #9a8776;
 }
 
 .dino-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.55rem;
   font-family: var(--font-mono);
   font-size: 0.55rem;
   letter-spacing: 0.1em;
   color: #9e8b78;
 }
 
+.dino-stats span {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid rgba(255, 140, 60, 0.28);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 0 12px rgba(255, 90, 30, 0.08);
+}
+
 .dino-stats b {
-  color: var(--cream);
+  color: #fff2e4;
+  text-shadow: 0 0 10px rgba(255, 179, 71, 0.35);
+}
+
+.dino-stat-tier b {
+  color: var(--dino-glow);
+}
+
+.dino[data-tier='CHAOS'] .dino-stat-tier {
+  border-color: rgba(255, 60, 40, 0.55);
+  background: rgba(255, 40, 20, 0.16);
+  animation: dino-tier-flash 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes dino-tier-flash {
+  from {
+    box-shadow: inset 0 0 10px rgba(255, 40, 20, 0.15);
+  }
+  to {
+    box-shadow: inset 0 0 18px rgba(255, 60, 30, 0.4);
+  }
 }
 
 .dino-champ {
@@ -4888,26 +5028,28 @@ img {
   align-items: baseline;
   justify-content: space-between;
   gap: 0.4rem 1rem;
-  padding: 0.55rem 1.1rem;
-  border-bottom: 1px solid rgba(255, 179, 71, 0.2);
-  background: linear-gradient(90deg, rgba(255, 122, 24, 0.12), rgba(0, 0, 0, 0.2));
+  padding: 0.6rem 1.15rem;
+  border-bottom: 1px solid rgba(255, 179, 71, 0.28);
+  background:
+    linear-gradient(90deg, rgba(255, 122, 24, 0.2), rgba(255, 40, 20, 0.08) 45%, rgba(0, 0, 0, 0.25));
   font-family: var(--font-mono);
 }
 
 .dino-champ-label {
   font-size: 0.5rem;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   color: #ffb347;
 }
 
 .dino-champ-line {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   letter-spacing: 0.04em;
   color: #efe8ff;
 }
 
 .dino-champ-line b {
   color: #ffd18a;
+  text-shadow: 0 0 12px rgba(255, 180, 80, 0.45);
 }
 
 .dino-over-title {
@@ -4926,8 +5068,22 @@ img {
   gap: 0.45rem;
   padding: 1.25rem;
   text-align: center;
-  background: rgba(4, 6, 12, 0.72);
-  backdrop-filter: blur(6px);
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(255, 70, 20, 0.28), transparent 55%),
+    rgba(4, 4, 10, 0.82);
+  backdrop-filter: blur(8px);
+  animation: dino-over-in 0.35s var(--ease-out) both;
+}
+
+@keyframes dino-over-in {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .dino-claim {
@@ -4945,8 +5101,8 @@ img {
   flex: 1 1 140px;
   min-width: 0;
   padding: 0.7rem 0.85rem;
-  border: 1px solid rgba(255, 179, 71, 0.4);
-  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 179, 71, 0.45);
+  background: rgba(0, 0, 0, 0.55);
   color: var(--cream);
   font-family: var(--font-mono);
   font-size: 0.78rem;
@@ -4968,6 +5124,7 @@ img {
   background: linear-gradient(135deg, #ff7a18, #ff2a1f);
   color: #1a0e08;
   font-weight: 700;
+  box-shadow: 0 0 22px rgba(255, 90, 20, 0.4);
 }
 
 .dino-claim button:disabled {
@@ -4993,6 +5150,32 @@ img {
   width: 100%;
   background: #f7f7f7;
   overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 140, 60, 0.25),
+    inset 0 0 40px rgba(0, 0, 0, 0.12);
+}
+
+.dino-stage-frame {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 2px,
+      rgba(0, 0, 0, 0.035) 2px,
+      rgba(0, 0, 0, 0.035) 3px
+    );
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+}
+
+.dino.is-playing .dino-stage {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 140, 60, 0.4),
+    inset 0 0 50px rgba(255, 90, 20, 0.08);
 }
 
 .dino-stage canvas {
@@ -5012,13 +5195,20 @@ img {
   font-size: 0.58rem;
   letter-spacing: 0.08em;
   color: #9e8b78;
-  border-top: 1px solid rgba(255, 140, 60, 0.1);
-  background: rgba(0, 0, 0, 0.25);
+  border-top: 1px solid rgba(255, 140, 60, 0.16);
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .dino-keys b {
+  display: inline-block;
+  min-width: 1.1rem;
+  padding: 0.1rem 0.28rem;
+  margin: 0 0.1rem;
+  border: 1px solid rgba(255, 179, 71, 0.4);
+  background: rgba(255, 122, 24, 0.12);
   color: #ffb347;
   font-size: 0.72rem;
+  text-align: center;
 }
 
 /* Phone buttons — below game, not on top of it */
@@ -5027,37 +5217,64 @@ img {
   justify-content: stretch;
   gap: 0.65rem;
   padding: 0.75rem 0.85rem 0.85rem;
-  border-top: 1px solid rgba(255, 140, 60, 0.12);
-  background: rgba(0, 0, 0, 0.35);
+  border-top: 1px solid rgba(255, 140, 60, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 90, 30, 0.08), transparent),
+    rgba(0, 0, 0, 0.42);
 }
 
 .dino-pad-btn {
   flex: 1;
-  min-height: 54px;
-  padding: 0.7rem 1rem;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  min-height: 58px;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  border: 1px solid rgba(255, 179, 71, 0.45);
-  background: rgba(8, 10, 16, 0.85);
+  border: 1px solid rgba(255, 179, 71, 0.5);
+  background:
+    linear-gradient(180deg, rgba(255, 140, 60, 0.12), transparent),
+    rgba(8, 10, 16, 0.92);
   color: #ffb347;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.45),
+    0 0 18px rgba(255, 90, 20, 0.12);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.dino-pad-btn:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.45),
+    0 0 12px rgba(255, 90, 20, 0.2);
 }
 
 .dino-pad-jump {
-  background: linear-gradient(135deg, #ff7a18, #ff2a1f);
+  background: linear-gradient(145deg, #ff9a3a, #ff7a18 40%, #ff2a1f);
   border-color: transparent;
   color: #1a0e08;
+  box-shadow:
+    0 4px 0 #8a1808,
+    0 0 24px rgba(255, 80, 20, 0.45);
+}
+
+.dino-pad-jump:active {
+  box-shadow:
+    0 1px 0 #8a1808,
+    0 0 16px rgba(255, 80, 20, 0.35);
 }
 
 .dino-pad-duck.is-active {
   background: rgba(94, 234, 212, 0.22);
   border-color: #5eead4;
   color: #5eead4;
+  box-shadow:
+    0 4px 0 rgba(20, 80, 70, 0.5),
+    0 0 18px rgba(94, 234, 212, 0.3);
 }
 
 .dino-foot-mobile {
@@ -5090,27 +5307,38 @@ img {
   .dino-foot-mobile {
     display: block;
   }
+
+  .dino-bezel {
+    inset: 0.3rem;
+  }
 }
 
 .dino-over p {
   margin: 0;
   font-family: var(--font-mono);
   font-size: 0.55rem;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   color: #ffb347;
+  text-shadow: 0 0 12px rgba(255, 140, 40, 0.4);
 }
 
 .dino-over-actions button {
   margin: 0.35rem auto 0;
-  padding: 0.75rem 1.2rem;
+  padding: 0.8rem 1.25rem;
   font-family: var(--font-mono);
   font-size: 0.62rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
-  border: 1px solid rgba(255, 179, 71, 0.45);
-  background: rgba(255, 122, 24, 0.12);
+  border: 1px solid rgba(255, 179, 71, 0.5);
+  background: rgba(255, 122, 24, 0.14);
   color: #ffb347;
+  transition: transform 0.15s var(--ease-out), box-shadow 0.15s;
+}
+
+.dino-over-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(255, 100, 30, 0.35);
 }
 
 .dino-over-actions button.is-primary {
@@ -5118,13 +5346,28 @@ img {
   border-color: transparent;
   color: #1a0e08;
   font-weight: 700;
+  box-shadow: 0 0 28px rgba(255, 90, 20, 0.45);
 }
 
 .dino-over-score {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 6vw, 3rem);
+  font-size: clamp(2.2rem, 7vw, 3.4rem);
   color: #ffb347;
-  text-shadow: 0 0 28px rgba(255, 140, 60, 0.45);
+  text-shadow:
+    0 0 18px rgba(255, 140, 60, 0.7),
+    0 0 40px rgba(255, 60, 20, 0.45);
+  animation: dino-score-slam 0.45s var(--ease-out) both;
+}
+
+@keyframes dino-score-slam {
+  from {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .dino-over-copy {
@@ -5151,7 +5394,8 @@ img {
   font-size: 0.55rem;
   letter-spacing: 0.04em;
   color: #9e8b78;
-  border-top: 1px solid rgba(255, 140, 60, 0.12);
+  border-top: 1px solid rgba(255, 140, 60, 0.16);
+  background: rgba(0, 0, 0, 0.28);
 }
 
 .dino-foot b {
@@ -5162,6 +5406,20 @@ img {
   .dino-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .dino-stats {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dino.is-playing,
+  .dino-live,
+  .dino[data-tier='CHAOS'] .dino-stat-tier,
+  .dino-over,
+  .dino-over-score {
+    animation: none;
   }
 }
 
