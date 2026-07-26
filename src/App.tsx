@@ -12,6 +12,16 @@ import { site } from './data/content'
 
 gsap.registerPlugin(ScrollTrigger)
 
+const INTRO_AUDIO_KEY = 'suraj-port-intro-audio'
+
+function prefersQuiet() {
+  return (
+    typeof window !== 'undefined' &&
+    (window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      window.matchMedia('(prefers-reduced-data: reduce)').matches)
+  )
+}
+
 export default function App() {
   const { flight, merge, launch, onArrived } = useRocketAscend()
 
@@ -38,6 +48,79 @@ export default function App() {
     })
 
     return () => ctx.revert()
+  }, [])
+
+  // Intro sting: once per browser tab session
+  useEffect(() => {
+    if (prefersQuiet()) return
+    try {
+      if (sessionStorage.getItem(INTRO_AUDIO_KEY)) return
+    } catch {
+      return
+    }
+
+    const audio = new Audio('/port-audio.mp3')
+    audio.preload = 'auto'
+    audio.volume = 0.55
+
+    let started = false
+    let cleaned = false
+
+    const markPlayed = () => {
+      try {
+        sessionStorage.setItem(INTRO_AUDIO_KEY, '1')
+      } catch {
+        /* private mode / blocked storage */
+      }
+    }
+
+    const cleanupUnlock = () => {
+      if (cleaned) return
+      cleaned = true
+      window.removeEventListener('pointerdown', unlock, true)
+      window.removeEventListener('keydown', unlock, true)
+    }
+
+    const start = () => {
+      if (started) return
+      started = true
+      void audio.play().then(
+        () => {
+          markPlayed()
+        },
+        () => {
+          started = false
+        },
+      )
+    }
+
+    const unlock = () => {
+      if (started) {
+        cleanupUnlock()
+        return
+      }
+      start()
+      cleanupUnlock()
+    }
+
+    void audio.play().then(
+      () => {
+        started = true
+        markPlayed()
+        cleanupUnlock()
+      },
+      () => {
+        // Autoplay blocked — wait for first user gesture in this tab
+        window.addEventListener('pointerdown', unlock, true)
+        window.addEventListener('keydown', unlock, true)
+      },
+    )
+
+    return () => {
+      cleanupUnlock()
+      audio.pause()
+      audio.src = ''
+    }
   }, [])
 
   return (
