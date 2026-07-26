@@ -1,0 +1,22 @@
+rules_version = '2';
+
+// Offline Runner leaderboard rules.
+// Anyone can read the board and submit a validated score.
+// No updates or deletes allowed from the client.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /dino_scores/{doc} {
+      allow read: if true;
+
+      allow create: if
+        request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 18
+        && request.resource.data.score is int
+        && request.resource.data.score > 0
+        && request.resource.data.score < 1000000;
+
+      allow update, delete: if false;
+    }
+  }
+}
